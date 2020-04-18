@@ -66,7 +66,6 @@ class Server(object):
         self.socket.listen(1)
 
         self.client_connection, address = self.socket.accept()
-
     def room_description(self, room_number):
         """
         For any room_number in 0, 1, 2, 3, return a string that "describes" that
@@ -79,9 +78,12 @@ class Server(object):
         :return: str
         """
 
-        # TODO: YOUR CODE HERE
+        desc = {0: "Living Room",
+                1: "Dining Room",
+                2: "Bathroom",
+                3: "Bedroom"}
 
-        pass
+        return desc[room_number]
 
     def greet(self):
         """
@@ -108,9 +110,11 @@ class Server(object):
         :return: None 
         """
 
-        # TODO: YOUR CODE HERE
+        got = b''
+        while b'\n' not in got:
+            got += self.client_connection.recv(16)
 
-        pass
+        self.input_buffer = got.decode()
 
     def move(self, argument):
         """
@@ -133,9 +137,23 @@ class Server(object):
         :return: None
         """
 
-        # TODO: YOUR CODE HERE
+        if self.room == 0:
+            options = {"west": 1,
+                       "east": 2,
+                       "north": 3}
+        elif self.room == 1:
+            options = {"east": 0}
+        elif self.room == 2:
+            options = {'west': 0}
+        else:
+            options = {'south': 0}
 
-        pass
+        try:
+            self.room = options[argument]
+        except KeyError:
+            self.output_buffer = "Not a valid movement!"
+        else:
+            self.output_buffer = self.room_description(self.room)
 
     def say(self, argument):
         """
@@ -151,9 +169,7 @@ class Server(object):
         :return: None
         """
 
-        # TODO: YOUR CODE HERE
-
-        pass
+        self.output_buffer = f'You say, "{argument}"'
 
     def quit(self, argument):
         """
@@ -167,9 +183,8 @@ class Server(object):
         :return: None
         """
 
-        # TODO: YOUR CODE HERE
-
-        pass
+        self.done = True
+        self.output_buffer = "Goodbye!"
 
     def route(self):
         """
@@ -183,9 +198,20 @@ class Server(object):
         :return: None
         """
 
-        # TODO: YOUR CODE HERE
+        # Get input from buffer
+        words = self.input_buffer.split(' ')
+        if words[-1].endswith('\n'):
+            words[-1] = words[-1][:-1]
+        key = words[0]
+        
+        options = {'move': self.move,
+                   'say': self.say,
+                   'quit': self.quit}
 
-        pass
+        try:
+            return options[key](' '.join(words[1:]))
+        except KeyError:
+            self.output_buffer = f"{key} is an invalid command"
 
     def push_output(self):
         """
@@ -197,9 +223,7 @@ class Server(object):
         :return: None 
         """
 
-        # TODO: YOUR CODE HERE
-
-        pass
+        self.client_connection.sendall(b'OK! ' + self.output_buffer.encode() + b'\n')
 
     def serve(self):
         self.connect()
